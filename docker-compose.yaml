@@ -1,0 +1,109 @@
+version: '3.5'
+
+networks:
+  prometheus-network:
+
+
+volumes:
+    prometheus_data:
+
+
+
+services:
+#----------GRAGANA DASHBOARD-------------------------------------------------
+  grafana:
+    image: grafana/grafana
+    container_name: Grafana
+    depends_on:
+      - prometheus
+    ports:
+      - 3000:3000
+    volumes:
+      - ./grafana:/var/lib/grafana
+    environment: 
+      GF_INSTALL_PLUGINS:  "alexanderzobnin-zabbix-app,\
+                            grafana-influxdb-08-datasource,\
+                            grafana-kairosdb-datasource,\
+                            grafana-piechart-panel,\
+                            grafana-simple-json-datasource,\
+                            grafana-worldmap-panel,\
+                            grafana-clock-panel"    
+
+    networks:
+      - prometheus-network
+    restart: always
+
+#----------PROMETHEUS SERVICES------------------------------------------------- 
+# Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus-server   
+    volumes:
+      - ./prometheus/config/:/etc/prometheus/
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - 9090:9090
+    links:
+      - cadvisor:cadvisor
+      - alertmanager:alertmanager
+    depends_on:
+      - cadvisor
+    networks:
+      - prometheus-network
+    restart: always
+
+  node-exporter:
+    image: prom/node-exporter
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command: 
+      - '--path.procfs=/host/proc' 
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    ports:
+      - 9100:9100
+    networks:
+      - prometheus-network
+    restart: always
+
+# alert manager
+  alertmanager:
+    image: prom/alertmanager
+    container_name: alertmanager
+    ports:
+      - 9093:9093
+    volumes:
+      - ./alertmanager/:/etc/alertmanager/
+    networks:
+      - prometheus-network
+    restart: always
+    command:
+      - '--config.file=/etc/alertmanager/config.yml'
+      - '--storage.path=/alertmanager'
+
+# Cadvisor
+  cadvisor:
+    image: google/cadvisor
+    container_name: Cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+    ports:
+      - 8080:8080
+    networks:
+      - prometheus-network
+    restart: always
+
+
+
