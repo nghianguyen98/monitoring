@@ -105,5 +105,12 @@ services:
       - prometheus-network
     restart: always
 
+# snmp exporter
 
-
+  snmp-exporter:
+    image: prom/snmp-exporter
+    user: "0"
+    volumes:
+      - /server/projects/monitoring-stack/snmp_exporter:/etc/snmp_exporter
+    ports:
+      - 9116:9116

@@ -28,6 +28,13 @@ scrape_configs:
     static_configs:
       - targets: ['localhost:9090']
 
+  - job_name: 'jira'
+    scheme: https # change to http if don't you have https
+    metrics_path: '/plugins/servlet/prometheus/metrics'
+    params:
+         token: ['KnhtPyxFKapM8qQr5hMC0G8c4oJ49We24lb']
+    static_configs:
+      - targets: ['it.hbc.com.vn'] # Jira host and port you serve        
 
 
   # Job for cadvisor  - IP Docker host
@@ -60,3 +67,39 @@ scrape_configs:
     static_configs:
        - targets: ['192.168.3.190:4000']
 
+  - job_name: 'HOST-DOCKER-DMZ'
+    static_configs:
+       - targets: ['115.79.26.177:9101']
+
+                
+  - job_name: snmp
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - "192.168.3.131"
+    metrics_path: /snmp
+    params:
+      module: [apcups]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 192.168.3.190:9116 # địa chỉ IP của máy host
+
+  - job_name: synology
+    scrape_interval: 5s
+    static_configs:
+      - targets:
+          - "172.16.10.239"
+    metrics_path: /snmp
+    params:
+      module: [synology]
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: 192.168.3.190:9116 # địa chỉ IP của máy host
